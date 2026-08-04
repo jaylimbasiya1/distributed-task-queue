@@ -1,0 +1,59 @@
+{
+  "title": "Task Queue Dashboard",
+  "uid": "taskqueue-main",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Queue Depth",
+      "gridPos": {"x":0,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"taskqueue_queue_depth","legendFormat":"Queue Depth"}],
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"green","value":0},{"color":"yellow","value":50},{"color":"red","value":200}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "Active Workers",
+      "gridPos": {"x":6,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"taskqueue_workers_active","legendFormat":"Workers"}],
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"green","value":0}]}}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Jobs Completed (total)",
+      "gridPos": {"x":12,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(taskqueue_jobs_completed_total)","legendFormat":"Completed"}],
+      "fieldConfig": {"defaults":{"color":{"fixedColor":"green","mode":"fixed"}}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "Jobs in DLQ",
+      "gridPos": {"x":18,"y":0,"w":6,"h":4},
+      "targets": [{"expr":"sum(taskqueue_jobs_dlq_total)","legendFormat":"DLQ"}],
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":1}]}}}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Job Throughput by Tenant",
+      "gridPos": {"x":0,"y":4,"w":12,"h":8},
+      "targets": [
+        {"expr":"rate(taskqueue_jobs_submitted_total[1m])","legendFormat":"{{tenant}} submitted"},
+        {"expr":"rate(taskqueue_jobs_completed_total[1m])","legendFormat":"{{tenant}} completed"}
+      ]
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Failure & Retry Rate",
+      "gridPos": {"x":12,"y":4,"w":12,"h":8},
+      "targets": [
+        {"expr":"rate(taskqueue_jobs_failed_total[1m])","legendFormat":"{{tenant}} failed"},
+        {"expr":"rate(taskqueue_jobs_dlq_total[1m])","legendFormat":"{{tenant}} → DLQ"}
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Worker Pool Size",
+      "gridPos": {"x":0,"y":12,"w":12,"h":6},
+      "targets": [{"expr":"taskqueue_workers_active","legendFormat":"Active Workers"}]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Job Processing Time (p95)",
+      "gridPos": {"x":12,"y":12,"w":12,"h":6},
+      "targets": [{"expr":"histogram_quantile(0.95, rate(taskqueue_worker_processing_time_seconds_bucket[5m]))","legendFormat":"p95 {{tenant}}"}]
+    }
+  ]
+}

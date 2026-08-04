@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: TaskQueue
+    folder: TaskQueue
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

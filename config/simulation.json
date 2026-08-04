@@ -1,0 +1,38 @@
+[
+  {
+    "tenantId": "tenant-shopify",
+    "scenario": "steady_normal",
+    "jobsPerMinute": 40,
+    "jobTypes": ["order-processing", "inventory-sync"],
+    "failureRate": 0.05,
+    "delayedJobPercent": 0.10,
+    "jobDurationMs": 800
+  },
+  {
+    "tenantId": "tenant-uber",
+    "scenario": "bursty",
+    "jobsPerMinute": 150,
+    "jobTypes": ["ride-matching", "surge-pricing"],
+    "failureRate": 0.15,
+    "delayedJobPercent": 0.05,
+    "jobDurationMs": 300
+  },
+  {
+    "tenantId": "tenant-netflix",
+    "scenario": "heavy_jobs",
+    "jobsPerMinute": 20,
+    "jobTypes": ["video-encoding", "thumbnail-gen"],
+    "failureRate": 0.20,
+    "delayedJobPercent": 0.30,
+    "jobDurationMs": 3000
+  },
+  {
+    "tenantId": "tenant-badactor",
+    "scenario": "rate_limit_breach",
+    "jobsPerMinute": 500,
+    "jobTypes": ["spam-job"],
+    "failureRate": 0.0,
+    "delayedJobPercent": 0.0,
+    "jobDurationMs": 100
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "tenant-shopify",
+    "name": "Shopify",
+    "apiKey": "sk-shopify-abc123",
+    "rateLimitPerMinute": 100,
+    "maxConcurrentJobs": 10,
+    "maxRetriesDefault": 3,
+    "requireIdempotencyKey": false
+  },
+  {
+    "id": "tenant-uber",
+    "name": "Uber",
+    "apiKey": "sk-uber-def456",
+    "rateLimitPerMinute": 200,
+    "maxConcurrentJobs": 20,
+    "maxRetriesDefault": 5,
+    "requireIdempotencyKey": false
+  },
+  {
+    "id": "tenant-netflix",
+    "name": "Netflix",
+    "apiKey": "sk-netflix-ghi789",
+    "rateLimitPerMinute": 500,
+    "maxConcurrentJobs": 50,
+    "maxRetriesDefault": 3,
+    "requireIdempotencyKey": true
+  },
+  {
+    "id": "tenant-badactor",
+    "name": "BadActor",
+    "apiKey": "sk-bad-jkl000",
+    "rateLimitPerMinute": 10,
+    "maxConcurrentJobs": 2,
+    "maxRetriesDefault": 1,
+    "requireIdempotencyKey": false
+  }
+]
