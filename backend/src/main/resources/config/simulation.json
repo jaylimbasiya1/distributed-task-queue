@@ -1,0 +1,28 @@
+{
+  "tenants": [
+    {
+      "tenantId": "tenant-alpha",
+      "jobsPerMinute": 30,
+      "failureRate": 0.1,
+      "jobTypes": ["EMAIL", "REPORT", "EXPORT"],
+      "minDurationMs": 500,
+      "maxDurationMs": 3000
+    },
+    {
+      "tenantId": "tenant-beta",
+      "jobsPerMinute": 15,
+      "failureRate": 0.2,
+      "jobTypes": ["INVOICE", "NOTIFICATION"],
+      "minDurationMs": 200,
+      "maxDurationMs": 1500
+    },
+    {
+      "tenantId": "tenant-gamma",
+      "jobsPerMinute": 10,
+      "failureRate": 0.05,
+      "jobTypes": ["SYNC", "BACKUP"],
+      "minDurationMs": 1000,
+      "maxDurationMs": 5000
+    }
+  ]
+}

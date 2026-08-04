@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: task-queue
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/${DB_NAME:taskqueue}
+    username: ${DB_USER:taskqueue}
+    password: ${DB_PASS:taskqueue}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+  threads:
+    virtual:
+      enabled: true
+management:
+  zipkin:
+    tracing:
+      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+  tracing:
+    sampling:
+      probability: 1.0
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+taskqueue:
+  worker:
+    min-pool-size: 5
+    max-pool-size: 50
+    poll-interval-ms: 500
+    lease-ttl-seconds: 30
+    lease-reaper-interval-seconds: 15
+  retry:
+    base-delay-ms: 2000
+    max-delay-ms: 60000
+  autoscaling:
+    scale-up-threshold: 50
+    scale-down-idle-seconds: 60
+    scale-step: 2
+  rate-limit:
+    window-seconds: 60
+
+logging:
+  pattern:
+    console: '{"time":"%d","level":"%p","traceId":"%X{traceId}","jobId":"%X{jobId}","tenantId":"%X{tenantId}","msg":"%m"}%n'

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "tenant-alpha",
+    "name": "Alpha Corp",
+    "rateLimitPerMinute": 200,
+    "maxConcurrentJobs": 10,
+    "maxRetriesDefault": 3,
+    "requireIdempotencyKey": false
+  },
+  {
+    "id": "tenant-beta",
+    "name": "Beta Inc",
+    "rateLimitPerMinute": 100,
+    "maxConcurrentJobs": 5,
+    "maxRetriesDefault": 2,
+    "requireIdempotencyKey": true
+  },
+  {
+    "id": "tenant-gamma",
+    "name": "Gamma LLC",
+    "rateLimitPerMinute": 50,
+    "maxConcurrentJobs": 3,
+    "maxRetriesDefault": 1,
+    "requireIdempotencyKey": false
+  }
+]
