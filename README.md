@@ -1,30 +1,19 @@
 # Distributed Task Queue
 
-![Java](https://img.shields.io/badge/Java-21-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.5-brightgreen)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
-![Redis](https://img.shields.io/badge/Redis-7.2-red)
-![React](https://img.shields.io/badge/React-18-61DAFB)
-![License](https://img.shields.io/badge/license-MIT-lightgrey)
+A multi-tenant, horizontally scalable background job processing platform, roughly the kind of engine that sits behind Sidekiq, Celery, or BullMQ, built on Java 21, Spring Boot, PostgreSQL, and Redis.
 
-A multi-tenant, horizontally scalable background job processing platform — the kind of engine that powers Sidekiq, Celery, or BullMQ — built from first principles on Java 21, Spring Boot, PostgreSQL, and Redis.
-
-Jobs are persisted in PostgreSQL before being queued in Redis, retried with exponential backoff on failure, and protected by Redis-based distributed leases so exactly one worker executes a job at a time — even across multiple app instances. If a worker crashes mid-execution, the job is automatically detected and recovered. Delivery guarantee: **at-least-once**, with idempotent submission.
-
----
+Jobs are persisted in PostgreSQL before being queued in Redis, retried with exponential backoff on failure, and protected by Redis-based distributed leases so exactly one worker executes a job at a time, even across multiple app instances. If a worker crashes mid-execution, the job gets detected and recovered automatically. Delivery guarantee is at-least-once, with idempotent submission.
 
 ## Highlights
 
-- **Distributed locking** — Redis `SET NX EX` leases with background renewal, so no two workers ever double-process a job
-- **Crash recovery** — a scheduled reaper detects orphaned jobs from dead workers and re-queues them within 15 seconds
-- **Multi-tenant isolation** — per-tenant rate limiting (sliding window) and concurrency quotas (atomic counters), enforced with Redis `INCR`
-- **Exactly-once submission, at-least-once execution** — idempotency keys prevent duplicate job creation; execution guarantees are documented honestly, not oversold
-- **Autoscaling workers** — thread pool grows and shrinks with queue depth, with anti-thrash guards
-- **Full observability** — Prometheus metrics, a pre-built Grafana dashboard, and 100%-sampled distributed tracing via Zipkin
-- **Live dashboard** — React + WebSocket UI showing every job transition in real time, no polling
-- **Dead-letter queue** — exhausted jobs land in a DLQ with full error history, retryable or purgeable from the UI
-
----
+- Distributed locking with Redis `SET NX EX` leases and background renewal, so no two workers ever double-process a job
+- Crash recovery: a scheduled reaper detects orphaned jobs from dead workers and re-queues them within 15 seconds
+- Multi-tenant isolation through per-tenant rate limiting (sliding window) and concurrency quotas (atomic counters via Redis `INCR`)
+- Job submission is exactly-once (idempotency keys prevent duplicate creation), execution is at-least-once
+- Autoscaling worker pool that grows and shrinks with queue depth, with guards against thrashing
+- Prometheus metrics, a pre-built Grafana dashboard, and 100%-sampled distributed tracing via Zipkin
+- Live React + WebSocket dashboard showing every job transition in real time, no polling
+- Dead-letter queue for exhausted jobs, with full error history, retryable or purgeable from the UI
 
 ## Table of Contents
 
@@ -210,7 +199,6 @@ All API calls require: `X-API-Key: <tenant-api-key>`
 
 Every request must include `X-API-Key: <key>`. The key identifies the tenant — all job operations are automatically scoped to that tenant.
 
----
 
 ### Submit a Job — `POST /api/v1/jobs`
 
@@ -268,7 +256,6 @@ curl -X POST http://localhost:8080/api/v1/jobs \
 {"error": "Rate limit exceeded for tenant: tenant-badactor"}
 ```
 
----
 
 ### Get a Job — `GET /api/v1/jobs/{id}`
 
@@ -279,7 +266,6 @@ curl http://localhost:8080/api/v1/jobs/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
 
 Returns `404` if not found. Returns `403` if the job belongs to a different tenant.
 
----
 
 ### List Jobs — `GET /api/v1/jobs`
 
@@ -295,7 +281,6 @@ curl "http://localhost:8080/api/v1/jobs?status=RUNNING" \
 
 Valid status values: `PENDING`, `RUNNING`, `COMPLETED`, `CANCELLED`, `DLQ`
 
----
 
 ### Cancel a Job — `DELETE /api/v1/jobs/{id}`
 
@@ -306,7 +291,6 @@ curl -X DELETE http://localhost:8080/api/v1/jobs/{id} \
   -H "X-API-Key: sk-shopify-abc123"
 ```
 
----
 
 ### Retry a Job — `POST /api/v1/jobs/{id}/retry`
 
@@ -317,7 +301,6 @@ curl -X POST http://localhost:8080/api/v1/jobs/{id}/retry \
   -H "X-API-Key: sk-shopify-abc123"
 ```
 
----
 
 ### Tenant Stats — `GET /api/v1/tenants/{id}/stats`
 
@@ -337,7 +320,6 @@ curl http://localhost:8080/api/v1/tenants/tenant-shopify/stats \
 }
 ```
 
----
 
 ### Create a Tenant — `POST /api/v1/tenants`
 
@@ -355,7 +337,6 @@ curl -X POST http://localhost:8080/api/v1/tenants \
   }'
 ```
 
----
 
 ### DLQ — `GET /api/v1/dlq`
 
@@ -369,7 +350,6 @@ Resubmit a DLQ entry as a new job (fresh attempt counter).
 
 Permanently remove a DLQ entry.
 
----
 
 ### WebSocket — `ws://localhost:3000/ws`
 
@@ -436,7 +416,6 @@ All logs are JSON, correlated by `traceId`, `jobId`, and `tenantId` via MDC:
 
 Open http://localhost:3000 to watch jobs flow through all states. BadActor hits its 10/min rate limit immediately — the dashboard shows `429` rejections while the other three tenants process normally.
 
----
 
 ### Scenario A — Worker Crash Recovery
 
@@ -446,7 +425,6 @@ Open http://localhost:3000 to watch jobs flow through all states. BadActor hits 
 
 Submits 20 Shopify jobs, waits for some to reach RUNNING, then kills and restarts the app container. Within 15 seconds of restart, `LeaseReaper` finds RUNNING jobs with no Redis lease (crash evidence) and re-queues them. All 20 jobs eventually reach COMPLETED.
 
----
 
 ### Scenario B — Redis Restart (Durability)
 
@@ -456,7 +434,6 @@ Submits 20 Shopify jobs, waits for some to reach RUNNING, then kills and restart
 
 Submits 30 Netflix jobs, then restarts Redis. Jobs that were in the Redis sorted set are lost. But PostgreSQL is the source of truth — all PENDING rows survive. On reconnect, the app rehydrates the Redis queue from PostgreSQL and resumes processing. No jobs are lost.
 
----
 
 ### Manual Scenarios
 
@@ -493,71 +470,51 @@ curl -X POST http://localhost:8080/api/v1/jobs \
 
 ## Design Decisions
 
-### 1. Redis Sorted Set as the Job Queue
+### 1. Redis sorted set as the job queue
 
-`ZADD job_queue {executeAtMs} {jobId}` — workers pop via a Lua script that atomically checks `score <= now` and calls `ZPOPMIN`.
+Jobs go in via `ZADD job_queue {executeAtMs} {jobId}`, and workers pop them with a Lua script that atomically checks `score <= now` and calls `ZPOPMIN`. A sorted set gives O(log N) insert and O(1) peek, and it makes delayed/scheduled jobs first-class: a job with a future score just doesn't get returned until its time arrives, so there's no separate "delayed job" table to maintain. The Lua pop is atomic, so two workers can never grab the same entry.
 
-**Why:** A sorted set gives O(log N) insert and O(1) peek. Delayed and scheduled jobs are first-class — they sit at a future score and are simply not returned until their time arrives. No separate "delayed job" table is needed. The Lua pop is atomic: no two workers can pop the same entry.
+The trade-off is that Redis isn't durable by default. I turned on append-only persistence (`--appendonly yes`), but the real recovery path is PostgreSQL: if Redis loses its queue, `QueueService` rehydrates all PENDING jobs from the DB on the next poll cycle.
 
-**Trade-off:** Redis is not durable by default. Append-only persistence is enabled (`--appendonly yes`) and PostgreSQL is the recovery source — if Redis loses its queue, `QueueService` rehydrates all PENDING jobs from the DB on the next poll cycle.
+### 2. Delivery guarantee: at-least-once, not exactly-once
 
----
-
-### 2. Delivery Guarantee — At-Least-Once with Lease-Bounded Windows
-
-The system is **at-least-once execution**, not exactly-once. It is important to be clear about what each layer guarantees:
+Worth being precise about what each layer actually guarantees, since "exactly-once" gets thrown around loosely:
 
 | Layer | Guarantee |
 |---|---|
-| Job submission with idempotency key | Exactly-once job creation — same `(tenantId, idempotencyKey)` always returns the same job record, never creates a second row |
-| Lease (`SET NX EX`) | At-most-once delivery *per attempt* — only one worker can hold the lease at a time, so two workers cannot execute the same job concurrently |
-| Overall execution | At-least-once — if a worker crashes mid-execution, the LeaseReaper re-queues the job and it runs again on a different worker |
-| COMPLETED marking | Protected by `isHeldBy` — a stale worker cannot mark a job COMPLETED after the lease was reclaimed |
+| Job submission with idempotency key | Exactly-once job creation. Same `(tenantId, idempotencyKey)` always returns the same job record, never a second row |
+| Lease (`SET NX EX`) | At-most-once *per attempt*. Only one worker can hold the lease at a time, so two workers never run the same job concurrently |
+| Overall execution | At-least-once. If a worker crashes mid-execution, the LeaseReaper re-queues the job and it runs again on a different worker |
+| COMPLETED marking | Guarded by `isHeldBy`, so a stale worker can't mark a job COMPLETED after its lease was reclaimed |
 
-**Why not exactly-once execution?** True exactly-once requires distributed transactions across Redis and PostgreSQL — each step would need to be atomic with the job execution itself. That is impractical for a general-purpose queue. The standard approach is at-least-once delivery with idempotent job handlers.
+True exactly-once execution would need distributed transactions spanning Redis and Postgres, with each step atomic with the job execution itself. That's not practical for a general-purpose queue, so this follows the standard approach instead: at-least-once delivery, idempotent handlers. If the same `idempotencyKey` comes in twice, the API just returns the existing job record with its current status rather than creating anything new.
 
-**Idempotency key + duplicate submission:** If the same `idempotencyKey` is submitted a second time, the API returns the existing job record with its current `status` — no new row, no second execution. If the original job is already COMPLETED, the response shows COMPLETED. If it is still RUNNING, the response shows RUNNING. The job runs once (or more than once only if a worker crashed mid-way, which is the at-least-once case above).
+The lease mechanism underneath this: before running a job, a worker calls `SET lease:{jobId} {workerId} NX EX {ttl}`. Only one worker can win that call across any number of instances, since Redis `SET NX` is atomic. The `EX {ttl}` means the lock expires on its own if the worker dies.
 
-Before executing a job, each worker calls `SET lease:{jobId} {workerId} NX EX {ttl}`. Only one worker can win this across any number of instances — Redis `SET NX` is atomic by definition. The `EX {ttl}` auto-expires the lock if the worker crashes.
+### 3. Lease renewal to avoid false expiry
 
----
+If a job runs longer than the lease TTL (30s by default), Redis expires the lease while the job is still legitimately running. The LeaseReaper then sees a RUNNING job with no lease, which looks exactly like a crash, and re-queues it. A second worker picks it up while the first one is still finishing, and when the first worker completes it blindly marks the job COMPLETED too. That's double execution.
 
-### 3. Lease Renewal Prevents False Expiry
+Two things fix it. First, a `ScheduledExecutorService` renews the lease every `leaseTtl / 2` seconds while the job runs, calling `EXPIRE lease:{jobId} {ttl}` only if the calling worker still holds it (checked with a GET + compare first). Second, after `executeJob()` returns, the worker checks `isHeldBy(jobId, workerId)` before marking anything COMPLETED — if the lease got reclaimed in the meantime (say, a brief Redis blip broke a renewal), the result is just discarded and the job stays with whoever holds the lease now.
 
-**The problem:** If `durationMs > leaseTtlSeconds` (default 30s), Redis auto-expires the lease. `LeaseReaper` sees a RUNNING job with no lease — identical to a crashed worker — and re-queues it. A second worker picks it up. The first worker finishes and blindly marks it COMPLETED. **Result: double execution.**
+### 4. Atomic concurrency quota via Redis INCR
 
-**The fix (two layers):**
+The first version of this counted running jobs straight from the DB:
 
-1. **Lease renewal:** A `ScheduledExecutorService` fires every `leaseTtl / 2` seconds during execution. Each renewal calls `EXPIRE lease:{jobId} {ttl}` only if the calling worker is still the current holder (GET + compare). The lease TTL is continuously reset, so it never expires during normal execution.
-
-2. **Ownership check:** After `executeJob()` returns, the worker verifies `isHeldBy(jobId, workerId)` before marking COMPLETED. If the lease was reclaimed (e.g., renewal failed during a brief Redis outage), the result is silently discarded — the job continues under the worker that now holds the lease.
-
----
-
-### 4. Atomic Concurrency Quota via Redis INCR
-
-**The problem (original code):**
 ```java
 long running = jobRepository.countByTenantIdAndStatus(tenantId, RUNNING);
 if (running >= max) { re-queue; }
 ```
-Two workers reading simultaneously both see `running = 0`. Both proceed. Quota is breached. This is a classic check-then-act race condition.
 
-**The fix:** Replace the DB count with `INCR concurrency:{tenantId}`. Redis `INCR` is atomic — two concurrent calls return distinct values (e.g., 1 and 2). The worker whose counter exceeds the limit immediately calls `DECR` and re-queues. The slot is released in a `finally` block, so every exit path (success, failure, lease-lost) decrements correctly.
+which is a textbook check-then-act race: two workers can both read `running = 0` at the same time, both proceed, and the quota gets breached. Swapping in `INCR concurrency:{tenantId}` fixes it, since Redis `INCR` is atomic and concurrent calls always return distinct values. Whichever worker's counter comes back over the limit immediately `DECR`s and re-queues. The slot gets released in a `finally` block so every exit path (success, failure, lost lease) decrements correctly, and if a worker crashes without decrementing, the LeaseReaper's `releaseSlot()` cleans it up when it recovers the orphaned job (with a clamp-to-zero guard so the counter can't go negative). On restart, `WorkerPool.init()` seeds the counters from the DB's RUNNING row count.
 
-**Crash recovery:** If a worker crashes without decrementing, `LeaseReaper` calls `releaseSlot()` when recovering the orphaned job. A clamp-to-zero guard prevents the counter from going negative. On app restart, `WorkerPool.init()` seeds counters from the DB's RUNNING row count to account for jobs that survived the restart.
+### 5. Enqueueing after commit, not inside the transaction
 
----
+`JobService.submitJob()` runs inside a transaction, and enqueuing to Redis from inside that transaction risks a worker popping the job ID before the DB row is actually committed. So the Redis enqueue is deferred to `afterCommit()` via `TransactionSynchronizationManager.registerSynchronization()` — the DB row is durably committed before any worker can even see the job exists.
 
-### 5. Transactional Enqueueing via afterCommit Hook
+### 6. Exponential backoff, capped
 
-`JobService.submitJob()` is `@Transactional`. Enqueuing to Redis inside the transaction risks a worker popping a job ID before the DB row is committed. Instead, `TransactionSynchronizationManager.registerSynchronization()` delays the Redis enqueue until `afterCommit()`. The DB row is durably committed before any worker can see the job.
-
----
-
-### 6. Exponential Backoff with Jitter-free Cap
-
-On failure: `delay = min(baseDelayMs × 2^attempt, maxDelayMs)` — defaults: base 2s, max 60s.
+`delay = min(baseDelayMs × 2^attempt, maxDelayMs)`, with a 2s base and a 60s cap by default:
 
 | Attempt | Delay |
 |---|---|
@@ -567,25 +524,15 @@ On failure: `delay = min(baseDelayMs × 2^attempt, maxDelayMs)` — defaults: ba
 | 4 | 16s |
 | 5+ | 60s (capped) |
 
-After `maxRetries` attempts, the job moves to DLQ with its full error history preserved.
+After `maxRetries` is exhausted, the job moves to the DLQ with its full error history intact.
 
----
+### 7. Fail open on Redis errors
 
-### 7. Fail-Open Strategy for Redis Errors
+`RateLimiterService` and `TenantConcurrencyService` both return `true` (allow) if Redis throws. A Redis outage shouldn't take down job processing entirely — accepting some excess load during an outage beats a full blackout, which is the same call most high-availability rate limiters make.
 
-Both `RateLimiterService` and `TenantConcurrencyService` return `true` (allow) when Redis throws an exception. A Redis outage should not halt job processing entirely. Accepting some excess requests during an outage is preferred over a complete service blackout — the same policy used by most high-availability rate limiters.
+### 8. Worker autoscaling
 
----
-
-### 8. Worker Autoscaling
-
-`WorkerPoolManager` checks queue depth every 10 seconds:
-- Queue depth ≥ 50 and pool < max (50) → add 2 threads
-- Queue depth = 0 for 60+ consecutive seconds and pool > min (5) → remove 2 threads
-
-Step-based scaling (±2) avoids the overhead spike of spinning up 40 threads at once and prevents thrashing when a bursty tenant alternates between flood and idle.
-
----
+`WorkerPoolManager` checks queue depth every 10 seconds and adds 2 threads if depth is at least 50 and the pool is under its max (50), or removes 2 if depth has been at zero for 60+ seconds and the pool is above its min (5). Scaling in steps of 2, rather than jumping straight to 40 threads, avoids both the startup overhead spike and thrashing when a bursty tenant flips between flood and idle.
 
 ## Test Suite
 
@@ -639,10 +586,3 @@ distributed-task-queue/
 └── docker-compose.yml              # postgres, redis, app, dashboard,
                                     # prometheus, grafana, zipkin
 ```
-
----
-
-## Author
-
-**Jay Limbasiya**
-[GitHub](https://github.com/jaylimbasiya1) · [LinkedIn](https://www.linkedin.com/in/jay-limbasiya-b47249141/)
