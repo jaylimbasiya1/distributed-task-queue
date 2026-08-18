@@ -4,7 +4,7 @@ echo ""
 echo "Step 1: Submitting 20 jobs for Shopify..."
 for i in $(seq 1 20); do
   curl -s -X POST http://localhost:8080/api/v1/jobs \
-    -H "X-API-Key: sk-shopify-abc123" \
+    -H "X-API-Key: demo-shopify-key" \
     -H "Content-Type: application/json" \
     -d "{\"type\":\"order-processing\",\"payload\":{\"orderId\":\"ORD-$i\"},\"maxRetries\":3,\"delayMs\":0}" > /dev/null
 done

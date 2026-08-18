@@ -2,10 +2,10 @@ import React from 'react'
 import TenantSelector from './TenantSelector'
 
 const TENANTS = [
-  { id: 'tenant-shopify', name: 'Shopify', apiKey: 'sk-shopify-abc123', color: '#96bf48' },
-  { id: 'tenant-uber', name: 'Uber', apiKey: 'sk-uber-def456', color: '#000000' },
-  { id: 'tenant-netflix', name: 'Netflix', apiKey: 'sk-netflix-ghi789', color: '#e50914' },
-  { id: 'tenant-badactor', name: 'BadActor', apiKey: 'sk-bad-jkl000', color: '#6b7280' },
+  { id: 'tenant-shopify', name: 'Shopify', apiKey: 'demo-shopify-key', color: '#96bf48' },
+  { id: 'tenant-uber', name: 'Uber', apiKey: 'demo-uber-key', color: '#000000' },
+  { id: 'tenant-netflix', name: 'Netflix', apiKey: 'demo-netflix-key', color: '#e50914' },
+  { id: 'tenant-badactor', name: 'BadActor', apiKey: 'demo-badactor-key', color: '#6b7280' },
 ]
 
 export default function Header({ currentTenant, onTenantChange, connected }) {

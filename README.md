@@ -126,7 +126,7 @@ Wait ~30 seconds for all health checks to pass, then:
 
 Tenants and API keys are seeded automatically on startup from `config/tenants.json`. The simulation also starts automatically — open the dashboard to see live job flow.
 
-> All tenant API keys shipped in this repo (`sk-shopify-abc123`, etc.) are fixture data for local demo purposes only, seeded fresh on every container start — not production credentials.
+> All tenant API keys shipped in this repo (`demo-shopify-key`, etc.) are fixture data for local demo purposes only, seeded fresh on every container start — not production credentials.
 
 ---
 
@@ -184,10 +184,10 @@ docker compose up --build --scale app=3
 
 | Tenant ID | API Key | Rate Limit/min | Max Concurrent | Max Retries | Notes |
 |---|---|---|---|---|---|
-| `tenant-shopify` | `sk-shopify-abc123` | 100 | 10 | 3 | Steady normal load |
-| `tenant-uber` | `sk-uber-def456` | 200 | 20 | 5 | Bursty, high volume |
-| `tenant-netflix` | `sk-netflix-ghi789` | 500 | 50 | 3 | Heavy long jobs, requires idempotency key |
-| `tenant-badactor` | `sk-bad-jkl000` | 10 | 2 | 1 | Tight limits to demonstrate rate limiting |
+| `tenant-shopify` | `demo-shopify-key` | 100 | 10 | 3 | Steady normal load |
+| `tenant-uber` | `demo-uber-key` | 200 | 20 | 5 | Bursty, high volume |
+| `tenant-netflix` | `demo-netflix-key` | 500 | 50 | 3 | Heavy long jobs, requires idempotency key |
+| `tenant-badactor` | `demo-badactor-key` | 10 | 2 | 1 | Tight limits to demonstrate rate limiting |
 
 All API calls require: `X-API-Key: <tenant-api-key>`
 
@@ -204,7 +204,7 @@ Every request must include `X-API-Key: <key>`. The key identifies the tenant —
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs \
-  -H "X-API-Key: sk-shopify-abc123" \
+  -H "X-API-Key: demo-shopify-key" \
   -H "Content-Type: application/json" \
   -d '{
     "type": "order-processing",
@@ -261,7 +261,7 @@ curl -X POST http://localhost:8080/api/v1/jobs \
 
 ```bash
 curl http://localhost:8080/api/v1/jobs/3fa85f64-5717-4562-b3fc-2c963f66afa6 \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 ```
 
 Returns `404` if not found. Returns `403` if the job belongs to a different tenant.
@@ -272,11 +272,11 @@ Returns `404` if not found. Returns `403` if the job belongs to a different tena
 ```bash
 # All jobs, paginated
 curl "http://localhost:8080/api/v1/jobs?page=0&size=20" \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 
 # Filter by status
 curl "http://localhost:8080/api/v1/jobs?status=RUNNING" \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 ```
 
 Valid status values: `PENDING`, `RUNNING`, `COMPLETED`, `CANCELLED`, `DLQ`
@@ -288,7 +288,7 @@ Only `PENDING` jobs can be cancelled. Returns `409` if the job is already RUNNIN
 
 ```bash
 curl -X DELETE http://localhost:8080/api/v1/jobs/{id} \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 ```
 
 
@@ -298,7 +298,7 @@ Re-submits a failed or DLQ job from scratch (resets attempt counter to 0).
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs/{id}/retry \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 ```
 
 
@@ -306,7 +306,7 @@ curl -X POST http://localhost:8080/api/v1/jobs/{id}/retry \
 
 ```bash
 curl http://localhost:8080/api/v1/tenants/tenant-shopify/stats \
-  -H "X-API-Key: sk-shopify-abc123"
+  -H "X-API-Key: demo-shopify-key"
 ```
 
 ```json
@@ -441,7 +441,7 @@ Submits 30 Netflix jobs, then restarts Redis. Jobs that were in the Redis sorted
 ```bash
 for i in $(seq 1 20); do
   curl -s -X POST http://localhost:8080/api/v1/jobs \
-    -H "X-API-Key: sk-bad-jkl000" \
+    -H "X-API-Key: demo-badactor-key" \
     -H "Content-Type: application/json" \
     -d '{"type":"spam","payload":{"durationMs":100},"maxRetries":1,"delayMs":0}' &
 done
@@ -451,7 +451,7 @@ done
 **Fill the DLQ:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs \
-  -H "X-API-Key: sk-shopify-abc123" \
+  -H "X-API-Key: demo-shopify-key" \
   -H "Content-Type: application/json" \
   -d '{"type":"always-fails","payload":{"durationMs":100,"failureRate":1.0},"maxRetries":3,"delayMs":0}'
 # Retries at 2s, 4s, 8s then moves to DLQ
@@ -460,7 +460,7 @@ curl -X POST http://localhost:8080/api/v1/jobs \
 **Schedule a delayed job:**
 ```bash
 curl -X POST http://localhost:8080/api/v1/jobs \
-  -H "X-API-Key: sk-shopify-abc123" \
+  -H "X-API-Key: demo-shopify-key" \
   -H "Content-Type: application/json" \
   -d '{"type":"nightly-report","payload":{"durationMs":500},"maxRetries":3,"delayMs":60000}'
 # Stays PENDING for 60 seconds, then executes
